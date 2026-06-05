@@ -5,15 +5,15 @@
   "engines": {
     "node": ">=22.12.0"
   },
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "db:push": "dotenv -e .env -- prisma db push",
-    "db:generate": "dotenv -e .env -- prisma generate",
-    "db:studio": "dotenv -e .env -- prisma studio",
-    "db:seed": "dotenv -e .env -- tsx prisma/seed.ts"
-  },
+"scripts": {
+  "dev":         "astro dev",
+  "build":       "prisma generate && astro build",
+  "preview":     "astro preview",
+  "db:push":     "dotenv -e .env -- prisma db push",
+  "db:generate": "dotenv -e .env -- prisma generate",
+  "db:studio":   "dotenv -e .env -- prisma studio",
+  "db:seed":     "dotenv -e .env -- tsx prisma/seed.ts"
+},
   "dependencies": {
     "@astrojs/react": "^5.0.7",
     "@astrojs/vercel": "^10.0.8",
