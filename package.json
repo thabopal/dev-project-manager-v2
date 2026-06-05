@@ -12,7 +12,8 @@
   "db:push":     "dotenv -e .env -- prisma db push",
   "db:generate": "dotenv -e .env -- prisma generate",
   "db:studio":   "dotenv -e .env -- prisma studio",
-  "db:seed":     "dotenv -e .env -- tsx prisma/seed.ts"
+  "db:seed":     "dotenv -e .env -- tsx prisma/seed.ts",
+  "reset-password": "dotenv -e .env -- tsx prisma/reset-password.ts"
 },
   "dependencies": {
     "@astrojs/react": "^5.0.7",

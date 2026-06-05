@@ -1,9 +1,9 @@
 ---
 import DashboardLayout from "../../layouts/DashboardLayout.astro"
+import { ProjectView } from "../../components/islands/ProjectView"
 import { prisma } from "../../lib/prisma"
 import { computeProgress, formatDate, PROJECT_TYPE_META } from "../../lib/utils"
 import { TaskStatus } from "@prisma/client"
-import { ProjectView } from "../../components/islands/ProjectView"
 
 const user   = Astro.locals.user
 const { id } = Astro.params
@@ -25,80 +25,153 @@ const project = await prisma.project.findFirst({
 
 if (!project) return Astro.redirect("/")
 
-const allTasks = project.phases.flatMap(p => p.milestones.flatMap(m => m.tasks))
-const done     = allTasks.filter(t => t.status === TaskStatus.DONE).length
-const blocked  = allTasks.filter(t => t.status === TaskStatus.BLOCKED).length
-const total    = allTasks.length
-const pct      = computeProgress(done, total)
-const typeMeta = PROJECT_TYPE_META[project.type]
-
-const projectJson = JSON.stringify(project.phases)
+const allTasks  = project.phases.flatMap(p => p.milestones.flatMap(m => m.tasks))
+const done      = allTasks.filter(t => t.status === TaskStatus.DONE).length
+const blocked   = allTasks.filter(t => t.status === TaskStatus.BLOCKED).length
+const pending   = allTasks.filter(t => t.status === TaskStatus.PENDING).length
+const inProg    = allTasks.filter(t => t.status === "IN_PROGRESS").length
+const total     = allTasks.length
+const pct       = computeProgress(done, total)
+const typeMeta  = PROJECT_TYPE_META[project.type]
 ---
 
 <DashboardLayout title={project.name} user={user}>
-  <div class="p-8 max-w-4xl">
-    <!-- Back -->
-    <a href="/" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-6">
+  <div style="padding:28px 32px;max-width:1280px;">
+
+    <!-- Breadcrumb -->
+    <a href="/" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:#9CA3AF;text-decoration:none;margin-bottom:20px;"
+      onmouseover="this.style.color='#7C3AED'" onmouseout="this.style.color='#9CA3AF'">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <polyline points="15 18 9 12 15 6"/>
       </svg>
-      Overview
+      Dashboard
     </a>
 
     <!-- Project header -->
-    <div class="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-6">
-      <div class="flex items-start justify-between gap-4 mb-4">
-        <div class="flex items-center gap-3">
-          <div class="w-3 h-12 rounded-full flex-shrink-0" style={`background: ${project.color}`} />
-          <div>
-            <h1 class="text-xl font-semibold text-white mb-1">{project.name}</h1>
-            <div class="flex items-center gap-3 text-sm text-gray-500">
-              <span>{typeMeta.icon} {typeMeta.label}</span>
-              {project.client && <span>· {project.client}</span>}
-              {project.dueDate && <span>· Due {formatDate(project.dueDate)}</span>}
-            </div>
+    <div style="background:white;border:1px solid #EDE8FF;border-radius:16px;padding:24px 28px;margin-bottom:24px;box-shadow:0 2px 12px rgba(124,58,237,0.07);">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+
+        <!-- Left: title + meta -->
+        <div style="display:flex;align-items:flex-start;gap:16px;flex:1;min-width:0;">
+          <div style={`width:52px;height:52px;border-radius:14px;background:${project.color}18;border:2px solid ${project.color}35;display:flex;align-items:center;justify-content:center;flex-shrink:0;`}>
+            <div style={`width:18px;height:18px;border-radius:50%;background:${project.color};`}></div>
           </div>
+          <div style="flex:1;min-width:0;">
+            <h1 style="font-size:22px;font-weight:700;color:#1A1830;letter-spacing:-0.4px;margin:0 0 6px;">{project.name}</h1>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+              <span style="font-size:12px;color:#6B7280;background:#F3F4F6;padding:3px 10px;border-radius:20px;">{typeMeta.icon} {typeMeta.label}</span>
+              {project.client && <span style="font-size:12px;color:#6B7280;">· {project.client}</span>}
+              {project.dueDate && <span style="font-size:12px;color:#6B7280;">· Due {formatDate(project.dueDate)}</span>}
+            </div>
+            {project.description && <p style="font-size:13px;color:#6B7280;margin:0;line-height:1.6;">{project.description}</p>}
+          </div>
+        </div>
+
+        <!-- Right: stat chips -->
+        <div style="display:flex;gap:10px;flex-shrink:0;flex-wrap:wrap;">
+          <div style="text-align:center;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:700;color:#059669;">{done}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:1px;">Done</div>
+          </div>
+          <div style="text-align:center;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:700;color:#2563EB;">{inProg}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:1px;">In progress</div>
+          </div>
+          <div style="text-align:center;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:10px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:700;color:#374151;">{pending}</div>
+            <div style="font-size:11px;color:#6B7280;margin-top:1px;">Pending</div>
+          </div>
+          {blocked > 0 && (
+            <div style="text-align:center;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:10px 16px;">
+              <div style="font-size:20px;font-weight:700;color:#DC2626;">{blocked}</div>
+              <div style="font-size:11px;color:#6B7280;margin-top:1px;">Blocked</div>
+            </div>
+          )}
         </div>
       </div>
 
-      {project.description && (
-        <p class="text-sm text-gray-500 mb-4">{project.description}</p>
-      )}
-
-      {project.stack.length > 0 && (
-        <div class="flex flex-wrap gap-1.5 mb-4">
-          {project.stack.map(s => (
-            <span class="text-xs px-2 py-0.5 rounded-md bg-white/[0.05] text-gray-400 border border-white/[0.06]">{s}</span>
-          ))}
+      <!-- Progress bar -->
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid #F3F4F6;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:12.5px;font-weight:500;color:#6B7280;">Overall progress</span>
+          <span style="font-size:13px;font-weight:700;color:#1A1830;">{pct}% <span style="font-weight:400;color:#9CA3AF;">({done}/{total} tasks)</span></span>
         </div>
-      )}
-
-      <!-- Progress -->
-      <div class="flex items-center gap-4">
-        <div class="flex-1 h-2 rounded-full bg-white/[0.06]">
-          <div class="h-2 rounded-full transition-all" style={`width: ${pct}%; background: ${project.color}`} />
-        </div>
-        <div class="flex gap-4 text-xs text-gray-500 flex-shrink-0">
-          <span><span class="text-white font-medium">{pct}%</span> complete</span>
-          <span><span class="text-emerald-400 font-medium">{done}</span>/{total} tasks</span>
-          {blocked > 0 && <span><span class="text-red-400 font-medium">{blocked}</span> blocked</span>}
+        <div style="height:8px;border-radius:4px;background:#F3F4F6;overflow:hidden;">
+          <div style={`height:8px;border-radius:4px;background:${pct===100?"#059669":project.color};width:${pct}%;transition:width 0.5s;`}></div>
         </div>
       </div>
     </div>
 
-    <!-- Interactive project view (React island) -->
-    <ProjectView phases={project.phases} client:load />
+    <!-- Two column layout -->
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+
+      <!-- Left: phases + tasks -->
+      <div>
+        <ProjectView phases={project.phases} client:load />
+      </div>
+
+      <!-- Right: project sidebar -->
+      <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:24px;">
+
+        <!-- Stack -->
+        {project.stack.length > 0 && (
+          <div style="background:white;border:1px solid #EDE8FF;border-radius:14px;padding:18px;box-shadow:0 1px 4px rgba(124,58,237,0.05);">
+            <h3 style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0 0 12px;">Tech Stack</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              {project.stack.map(s => (
+                <span style="font-size:12px;padding:4px 10px;border-radius:20px;background:#F5F3FF;color:#7C3AED;border:1px solid #DDD6FE;font-weight:500;">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <!-- Phase breakdown -->
+        <div style="background:white;border:1px solid #EDE8FF;border-radius:14px;padding:18px;box-shadow:0 1px 4px rgba(124,58,237,0.05);">
+          <h3 style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0 0 14px;">Phases</h3>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            {project.phases.map(phase => {
+              const phaseTasks = phase.milestones.flatMap(m => m.tasks)
+              const pDone  = phaseTasks.filter(t => t.status === "DONE").length
+              const pTotal = phaseTasks.length
+              const pPct   = computeProgress(pDone, pTotal)
+              return (
+                <div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div style={`width:8px;height:8px;border-radius:50%;background:${phase.color};`}></div>
+                      <span style="font-size:13px;font-weight:500;color:#1A1830;">{phase.name}</span>
+                    </div>
+                    <span style="font-size:11.5px;color:#9CA3AF;">{pDone}/{pTotal}</span>
+                  </div>
+                  <div style="height:5px;border-radius:3px;background:#F3F4F6;">
+                    <div style={`height:5px;border-radius:3px;background:${pPct===100?"#059669":phase.color};width:${pPct}%;transition:width 0.3s;`}></div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <!-- Quick stats -->
+        <div style="background:white;border:1px solid #EDE8FF;border-radius:14px;padding:18px;box-shadow:0 1px 4px rgba(124,58,237,0.05);">
+          <h3 style="font-size:12px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.06em;margin:0 0 14px;">Summary</h3>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            {[
+              { label:"Total tasks",    value:total,   color:"#1A1830" },
+              { label:"Completed",      value:done,    color:"#059669" },
+              { label:"In progress",    value:inProg,  color:"#2563EB" },
+              { label:"Pending",        value:pending, color:"#6B7280" },
+              { label:"Blocked",        value:blocked, color:"#DC2626" },
+            ].map(({ label, value, color }) => (
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-size:13px;color:#6B7280;">{label}</span>
+                <span style={`font-size:13px;font-weight:600;color:${color};`}>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
+    </div>
   </div>
 </DashboardLayout>
-
-<script>
-  import { ProjectView } from "../../components/islands/ProjectView"
-  import { createElement } from "react"
-  import { createRoot } from "react-dom/client"
-
-  const container = document.getElementById("project-view")
-  if (container) {
-    const phases = JSON.parse(container.dataset.phases || "[]")
-    createRoot(container).render(createElement(ProjectView, { phases }))
-  }
-</script>
