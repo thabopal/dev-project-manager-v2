@@ -1,0 +1,137 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String?
+  email     String    @unique
+  password  String?
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Project {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  type        ProjectType
+  status      ProjectStatus @default(ACTIVE)
+  color       String        @default("#0EA5E9")
+  stack       String[]
+  client      String?
+  dueDate     DateTime?
+  phases      Phase[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([userId])
+}
+
+model Phase {
+  id         String      @id @default(cuid())
+  projectId  String
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name       String
+  subtitle   String?
+  startDate  DateTime?
+  endDate    DateTime?
+  order      Int
+  color      String      @default("#0EA5E9")
+  milestones Milestone[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([projectId])
+}
+
+model Milestone {
+  id        String   @id @default(cuid())
+  phaseId   String
+  phase     Phase    @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  name      String
+  theme     String?
+  order     Int
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phaseId])
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  milestoneId String
+  milestone   Milestone    @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  text        String
+  category    TaskCategory
+  status      TaskStatus   @default(PENDING)
+  priority    Priority     @default(MEDIUM)
+  blockedBy   String?
+  notes       String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  order       Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([milestoneId])
+}
+
+enum ProjectType {
+  INSTITUTIONAL
+  SAAS_PRODUCT
+  CLIENT
+  RESEARCH
+  PERSONAL
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskCategory {
+  SETUP
+  DEPS
+  FALLBACK
+  DEV
+  MODEL
+  BUILD
+  POLISH
+  DEPLOY
+  UAT
+  DOCS
+  BUFFER
+  ENHANCE
+  HANDOVER
+  RESEARCH
+  MEETING
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  SKIPPED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}

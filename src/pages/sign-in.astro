@@ -1,0 +1,91 @@
+---
+import { getSession } from "../lib/session"
+import "../styles/global.css"
+
+const session = await getSession(Astro.cookies)
+if (session) return Astro.redirect("/")
+
+const error = Astro.url.searchParams.get("error")
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in · dev-pm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body style="display:flex;min-height:100vh;margin:0;">
+
+    <!-- Left panel - dark brand -->
+    <div style="width:420px;flex-shrink:0;background:#1C1A2E;display:flex;flex-direction:column;padding:48px 40px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:60px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#A78BFA);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <span style="font-size:17px;font-weight:700;color:white;letter-spacing:-0.3px;">dev-pm</span>
+      </div>
+
+      <div style="flex:1;">
+        <h2 style="font-size:28px;font-weight:700;color:white;letter-spacing:-0.5px;margin-bottom:12px;line-height:1.3;">
+          Manage your projects<br/>
+          <span style="color:#A78BFA;">your way.</span>
+        </h2>
+        <p style="font-size:14px;color:#94A3B8;line-height:1.7;margin-bottom:40px;">
+          A developer-focused project manager built for phased, milestone-driven work. Track progress, manage dependencies, ship on time.
+        </p>
+
+        <!-- Feature list -->
+        {["Phase-based project tracking", "Milestone & task management", "Blocked task visibility", "Built for developers"].map(f => (
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+            <div style="width:20px;height:20px;border-radius:6px;background:rgba(124,58,237,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#A78BFA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <span style="font-size:13px;color:#94A3B8;">{f}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <!-- Right panel - light form -->
+    <div style="flex:1;background:#F5F4FF;display:flex;align-items:center;justify-content:center;padding:40px;">
+      <div style="width:100%;max-width:380px;">
+        <h1 style="font-size:24px;font-weight:700;color:#1A1830;letter-spacing:-0.4px;margin-bottom:6px;">Welcome back</h1>
+        <p style="font-size:14px;color:#9CA3AF;margin-bottom:32px;">Sign in to your workspace</p>
+
+        {error && (
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#DC2626;">
+            {error === "invalid" ? "Invalid email or password" : "Something went wrong"}
+          </div>
+        )}
+
+        <div style="background:white;border:1px solid #EDE8FF;border-radius:16px;padding:28px;box-shadow:0 4px 24px rgba(124,58,237,0.08);">
+          <form method="POST" action="/api/auth/login" style="display:flex;flex-direction:column;gap:18px;">
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:500;color:#374151;margin-bottom:6px;">Email address</label>
+              <input type="email" name="email" required class="input" style="width:100%;" placeholder="tpali@cut.ac.za" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:500;color:#374151;margin-bottom:6px;">Password</label>
+              <input type="password" name="password" required class="input" style="width:100%;" placeholder="••••••••" />
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;padding:12px;font-size:14px;">
+              Sign in →
+            </button>
+          </form>
+        </div>
+
+        <p style="text-align:center;margin-top:20px;font-size:13px;color:#9CA3AF;">
+          No account? <a href="/sign-up" style="color:#7C3AED;text-decoration:none;font-weight:500;">Create one →</a>
+        </p>
+      </div>
+    </div>
+
+  </body>
+</html>

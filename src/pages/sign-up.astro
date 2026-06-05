@@ -1,0 +1,84 @@
+---
+import { getSession } from "../lib/session"
+import "../styles/global.css"
+
+const session = await getSession(Astro.cookies)
+if (session) return Astro.redirect("/")
+
+const error = Astro.url.searchParams.get("error")
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign up · dev-pm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body style="display:flex;min-height:100vh;margin:0;">
+
+    <!-- Left panel -->
+    <div style="width:420px;flex-shrink:0;background:#1C1A2E;display:flex;flex-direction:column;padding:48px 40px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:60px;">
+        <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#7C3AED,#A78BFA);display:flex;align-items:center;justify-content:center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </div>
+        <span style="font-size:17px;font-weight:700;color:white;letter-spacing:-0.3px;">dev-pm</span>
+      </div>
+      <div style="flex:1;">
+        <h2 style="font-size:28px;font-weight:700;color:white;letter-spacing:-0.5px;margin-bottom:12px;line-height:1.3;">
+          Start shipping<br/><span style="color:#A78BFA;">faster today.</span>
+        </h2>
+        <p style="font-size:14px;color:#94A3B8;line-height:1.7;">
+          Create your free workspace and start managing projects the developer way — phased, milestone-driven, and always unblocked.
+        </p>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div style="flex:1;background:#F5F4FF;display:flex;align-items:center;justify-content:center;padding:40px;">
+      <div style="width:100%;max-width:380px;">
+        <h1 style="font-size:24px;font-weight:700;color:#1A1830;letter-spacing:-0.4px;margin-bottom:6px;">Create your account</h1>
+        <p style="font-size:14px;color:#9CA3AF;margin-bottom:32px;">Free forever. No credit card required.</p>
+
+        {error && (
+          <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#DC2626;">
+            {error === "exists" ? "An account with this email already exists" :
+             error === "invalid" ? "Valid email and password (min 8 chars) required" : "Something went wrong"}
+          </div>
+        )}
+
+        <div style="background:white;border:1px solid #EDE8FF;border-radius:16px;padding:28px;box-shadow:0 4px 24px rgba(124,58,237,0.08);">
+          <form method="POST" action="/api/auth/register" style="display:flex;flex-direction:column;gap:16px;">
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:500;color:#374151;margin-bottom:6px;">Full name</label>
+              <input type="text" name="name" required class="input" style="width:100%;" placeholder="Thabo Pali" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:500;color:#374151;margin-bottom:6px;">Email address</label>
+              <input type="email" name="email" required class="input" style="width:100%;" placeholder="tpali@cut.ac.za" />
+            </div>
+            <div>
+              <label style="display:block;font-size:12.5px;font-weight:500;color:#374151;margin-bottom:6px;">
+                Password <span style="color:#9CA3AF;">(min 8 characters)</span>
+              </label>
+              <input type="password" name="password" required minlength="8" class="input" style="width:100%;" placeholder="••••••••" />
+            </div>
+            <button type="submit" class="btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:4px;">
+              Create account →
+            </button>
+          </form>
+        </div>
+
+        <p style="text-align:center;margin-top:20px;font-size:13px;color:#9CA3AF;">
+          Already have an account? <a href="/sign-in" style="color:#7C3AED;text-decoration:none;font-weight:500;">Sign in →</a>
+        </p>
+      </div>
+    </div>
+
+  </body>
+</html>
