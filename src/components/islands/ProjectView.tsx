@@ -73,16 +73,108 @@ function StatusButton({ status, onClick }: { status: string; onClick: () => void
 }
 
 // ── Task row ─────────────────────────────────────────────────────────────────
-function TaskRow({ task, onToggle }: { task: Task; onToggle: (id: string, s: string) => void }) {
+function TaskRow({ task, onToggle, onUpdate, onDelete }: {
+  task:     Task
+  onToggle: (id: string, s: string) => void
+  onUpdate: (id: string, updates: Partial<Task>) => void
+  onDelete: (id: string) => void
+}) {
+  const [editing, setEditing]   = useState(false)
+  const [text, setText]         = useState(task.text)
+  const [category, setCategory] = useState(task.category)
+  const [priority, setPriority] = useState(task.priority)
+  const [blockedBy, setBlockedBy] = useState(task.blockedBy ?? "")
+  const [saving, setSaving]     = useState(false)
+  const [hovering, setHovering] = useState(false)
+
   const done    = task.status === "DONE"
   const blocked = task.status === "BLOCKED"
   const cat     = CAT_META[task.category] ?? { label:task.category, color:"#6B7280", bg:"#F9FAFB" }
   const next    = (s: string) => s === "PENDING" ? "IN_PROGRESS" : s === "IN_PROGRESS" ? "DONE" : "PENDING"
 
+  const saveEdit = async () => {
+    if (!text.trim()) return
+    setSaving(true)
+    const res = await fetch(`/api/tasks/${task.id}`, {
+      method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text, category, priority, blockedBy: blockedBy || null })
+    })
+    if (res.ok) {
+      onUpdate(task.id, { text, category, priority, blockedBy: blockedBy || null })
+      setEditing(false)
+    }
+    setSaving(false)
+  }
+
+  const handleDelete = async () => {
+    if (!confirm("Delete this task?")) return
+    const res = await fetch(`/api/tasks/${task.id}`, { method:"DELETE" })
+    if (res.ok) onDelete(task.id)
+  }
+
+  // Edit mode
+  if (editing) {
+    return (
+      <div style={{padding:"14px 20px",borderBottom:"1px solid #F9F8FF",background:"#FAFAFE"}}>
+        <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+          <input value={text} onChange={e=>setText(e.target.value)}
+            style={{...inp,fontSize:"13.5px",fontWeight:450}}
+            onKeyDown={e=>{if(e.key==="Enter")saveEdit();if(e.key==="Escape")setEditing(false)}}
+            autoFocus />
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+            <div>
+              <label style={{display:"block",fontSize:"11px",fontWeight:600,color:"#9CA3AF",marginBottom:"4px",textTransform:"uppercase",letterSpacing:".05em"}}>Category</label>
+              <select value={category} onChange={e=>setCategory(e.target.value)} style={sel}>
+                {CATEGORIES.map(c=><option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:"11px",fontWeight:600,color:"#9CA3AF",marginBottom:"4px",textTransform:"uppercase",letterSpacing:".05em"}}>Priority</label>
+              <select value={priority} onChange={e=>setPriority(e.target.value)} style={sel}>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+            <div>
+              <label style={{display:"block",fontSize:"11px",fontWeight:600,color:"#9CA3AF",marginBottom:"4px",textTransform:"uppercase",letterSpacing:".05em"}}>Blocked by</label>
+              <input value={blockedBy} onChange={e=>setBlockedBy(e.target.value)}
+                placeholder="e.g. ITS DBA" style={inp}
+                onFocus={e=>e.target.style.borderColor="#7C3AED"}
+                onBlur={e=>e.target.style.borderColor="#E5E7EB"} />
+            </div>
+          </div>
+          <div style={{display:"flex",gap:"8px"}}>
+            <button onClick={saveEdit} disabled={saving||!text.trim()} style={{
+              padding:"7px 16px",borderRadius:"8px",border:"none",
+              background:"linear-gradient(135deg,#7C3AED,#9F67FA)",
+              color:"white",fontSize:"13px",fontWeight:600,cursor:"pointer",
+              opacity:saving||!text.trim()?0.5:1
+            }}>{saving?"Saving…":"Save"}</button>
+            <button onClick={()=>{setEditing(false);setText(task.text);setCategory(task.category);setPriority(task.priority);setBlockedBy(task.blockedBy??"")}} style={{
+              padding:"7px 14px",borderRadius:"8px",border:"1.5px solid #E5E7EB",
+              background:"white",color:"#6B7280",fontSize:"13px",cursor:"pointer"
+            }}>Cancel</button>
+            <button onClick={handleDelete} style={{
+              marginLeft:"auto",padding:"7px 14px",borderRadius:"8px",
+              border:"1.5px solid #FECACA",background:"#FEF2F2",
+              color:"#DC2626",fontSize:"13px",cursor:"pointer"
+            }}>Delete</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // View mode
   return (
-    <div style={{display:"flex",alignItems:"flex-start",gap:"14px",padding:"13px 20px",borderBottom:"1px solid #F9F8FF",background:done?"#FAFAFE":blocked?"#FFF9F9":"white"}}>
-      <StatusButton status={task.status} onClick={() => onToggle(task.id, next(task.status))} />
-      <div style={{flex:1,minWidth:0}}>
+    <div
+      style={{display:"flex",alignItems:"flex-start",gap:"14px",padding:"13px 20px",borderBottom:"1px solid #F9F8FF",background:done?"#FAFAFE":blocked?"#FFF9F9":"white",transition:"background 0.1s"}}
+      onMouseOver={()=>setHovering(true)}
+      onMouseOut={()=>setHovering(false)}>
+      <StatusButton status={task.status} onClick={()=>onToggle(task.id,next(task.status))} />
+      <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setEditing(true)}>
         <p style={{fontSize:"13.5px",lineHeight:"1.55",margin:0,color:done?"#9CA3AF":"#1A1830",textDecoration:done?"line-through":"none",fontWeight:done?400:450}}>
           {task.text}
         </p>
@@ -93,13 +185,25 @@ function TaskRow({ task, onToggle }: { task: Task; onToggle: (id: string, s: str
         )}
       </div>
       <div style={{display:"flex",alignItems:"center",gap:"6px",flexShrink:0}}>
-        {task.priority === "CRITICAL" && <span style={{fontSize:"10.5px",fontWeight:600,padding:"2px 8px",borderRadius:"20px",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA"}}>Critical</span>}
-        {task.priority === "HIGH"     && <span style={{fontSize:"10.5px",fontWeight:600,padding:"2px 8px",borderRadius:"20px",background:"#FFFBEB",color:"#D97706",border:"1px solid #FDE68A"}}>High</span>}
+        {hovering && (
+          <button onClick={()=>setEditing(true)} style={{
+            background:"none",border:"1.5px solid #E5E7EB",borderRadius:"6px",
+            padding:"3px 8px",cursor:"pointer",color:"#9CA3AF",fontSize:"11px",
+            transition:"all 0.15s"
+          }}
+          onMouseOver={e=>{e.currentTarget.style.borderColor="#7C3AED";e.currentTarget.style.color="#7C3AED"}}
+          onMouseOut={e =>{e.currentTarget.style.borderColor="#E5E7EB"; e.currentTarget.style.color="#9CA3AF"}}>
+            Edit
+          </button>
+        )}
+        {task.priority==="CRITICAL" && <span style={{fontSize:"10.5px",fontWeight:600,padding:"2px 8px",borderRadius:"20px",background:"#FEF2F2",color:"#DC2626",border:"1px solid #FECACA"}}>Critical</span>}
+        {task.priority==="HIGH"     && <span style={{fontSize:"10.5px",fontWeight:600,padding:"2px 8px",borderRadius:"20px",background:"#FFFBEB",color:"#D97706",border:"1px solid #FDE68A"}}>High</span>}
         <span style={{fontSize:"11px",fontWeight:600,padding:"3px 9px",borderRadius:"20px",background:cat.bg,color:cat.color,border:`1px solid ${cat.color}25`}}>{cat.label}</span>
       </div>
     </div>
   )
 }
+
 
 // ── Add task inline form ──────────────────────────────────────────────────────
 function AddTaskForm({ milestoneId, phaseColor, onAdd, onCancel }: {
@@ -288,10 +392,12 @@ function AddPhaseForm({ projectId, onAdd, onCancel }: {
 }
 
 // ── Milestone block ───────────────────────────────────────────────────────────
-function MilestoneBlock({ milestone, phaseColor, onToggle, onTaskAdded }: {
+function MilestoneBlock({ milestone, phaseColor, onToggle, onTaskAdded, onTaskUpdated, onTaskDeleted }: {
   milestone: Milestone; phaseColor: string
   onToggle: (id: string, s: string) => void
   onTaskAdded: (milestoneId: string, task: Task) => void
+  onTaskUpdated:  (milestoneId: string, taskId: string, updates: Partial<Task>) => void
+  onTaskDeleted:  (milestoneId: string, taskId: string) => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [addingTask, setAddingTask] = useState(false)
@@ -330,7 +436,13 @@ function MilestoneBlock({ milestone, phaseColor, onToggle, onTaskAdded }: {
               No tasks yet.{" "}
               <button onClick={()=>setAddingTask(true)} style={{color:"#7C3AED",background:"none",border:"none",cursor:"pointer",fontSize:"13px",fontWeight:500,textDecoration:"underline"}}>Add one</button>
             </div>
-          ) : milestone.tasks.map(t => <TaskRow key={t.id} task={t} onToggle={onToggle} />)}
+          ) : milestone.tasks.map(t => <TaskRow
+    key={t.id}
+    task={t}
+    onToggle={onToggle}
+    onUpdate={(taskId, updates) => onTaskUpdated(milestone.id, taskId, updates)}
+    onDelete={(taskId) => onTaskDeleted(milestone.id, taskId)}
+  />)}
 
           {addingTask ? (
             <AddTaskForm milestoneId={milestone.id} phaseColor={phaseColor}
@@ -381,12 +493,34 @@ export function ProjectView({ phases, projectId }: { phases: Phase[]; projectId:
     })
   }
 
-  const addTask = (milestoneId: string, task: Task) => {
-    setLocalPhases(prev => prev.map(ph => ({
-      ...ph,
-      milestones: ph.milestones.map(m => m.id === milestoneId ? { ...m, tasks:[...m.tasks,task] } : m)
-    })))
-  }
+const addTask = (milestoneId: string, task: Task) => {
+  setLocalPhases(prev => prev.map(ph => ({
+    ...ph,
+    milestones: ph.milestones.map(m => m.id === milestoneId ? { ...m, tasks:[...m.tasks,task] } : m)
+  })))
+}
+
+const updateTask = (milestoneId: string, taskId: string, updates: Partial<Task>) => {
+  setLocalPhases(prev => prev.map(ph => ({
+    ...ph,
+    milestones: ph.milestones.map(m =>
+      m.id === milestoneId
+        ? { ...m, tasks: m.tasks.map(t => t.id === taskId ? { ...t, ...updates } : t) }
+        : m
+    )
+  })))
+}
+
+const deleteTask = (milestoneId: string, taskId: string) => {
+  setLocalPhases(prev => prev.map(ph => ({
+    ...ph,
+    milestones: ph.milestones.map(m =>
+      m.id === milestoneId
+        ? { ...m, tasks: m.tasks.filter(t => t.id !== taskId) }
+        : m
+    )
+  })))
+}
 
   const addPhase = (phase: Phase) => {
     setLocalPhases(prev => [...prev, phase])
@@ -542,9 +676,17 @@ export function ProjectView({ phases, projectId }: { phases: Phase[]; projectId:
         <div style={{textAlign:"center",padding:"40px",color:"#9CA3AF",fontSize:"13.5px",background:"white",borderRadius:"12px",border:"1px solid #EDE8FF"}}>
           {filter !== "ALL" ? "No tasks match this filter" : "No milestones yet. Add one below."}
         </div>
-      ) : filtered.map(m=>(
-        <MilestoneBlock key={m.id} milestone={m} phaseColor={current.color} onToggle={toggle} onTaskAdded={addTask} />
-      ))}
+      ) : filtered.map(m => (
+  <MilestoneBlock
+    key={m.id}
+    milestone={m}
+    phaseColor={current.color}
+    onToggle={toggle}
+    onTaskAdded={addTask}
+    onTaskUpdated={(milestoneId, taskId, updates) => updateTask(milestoneId, taskId, updates)}
+    onTaskDeleted={(milestoneId, taskId) => deleteTask(milestoneId, taskId)}
+  />
+))}
 
       {/* Add milestone button */}
       {!addingMilestone && (

@@ -107,7 +107,7 @@ const typeMeta  = PROJECT_TYPE_META[project.type]
 
       <!-- Left: phases + tasks -->
       <div>
-        <ProjectView phases={project.phases} client:load />
+        <ProjectView phases={project.phases} projectId={project.id} client:load />
       </div>
 
       <!-- Right: project sidebar -->

@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro"
-import { prisma } from "../../../lib/prisma"
-import { getSession } from "../../../lib/session"
+import { prisma } from "../../lib/prisma"
+import { getSession } from "../../lib/session"
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   const session = await getSession(cookies)
